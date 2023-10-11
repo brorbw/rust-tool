@@ -1,0 +1,9 @@
+version: "2"
+services:
+  rust-tool:
+    build: .
+    environment:
+      SERVER_ADDRESS: ${SERVER_ADDRESS}
+      PORT: ${PORT}
+      PASSWORD: ${PASSWORD}
+      DISCORD_URL: ${DISCORD_URL}
