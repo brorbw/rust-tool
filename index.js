@@ -6,64 +6,74 @@ const rcon = new Client({
 	password: process.env.PASSWORD
 });
 
-rcon.login();
+const defaultDelay = 300_000;
+let backOffCounter = 0;
 
-rcon.on('connected', () => {
-	console.log(`Connected to ${rcon.ws.ip}:${rcon.ws.port}`);
+const connectToServer = () => {
+	rcon.login();
 
-	// Message, Name, Identifier.
-	// rcon.send('serverinfo', 'Artful', 10);
-	rcon.send('say Connected to chat', 10);
+	rcon.on('connected', () => {
+		console.log(`Connected to ${rcon.ws.ip}:${rcon.ws.port}`);
 
-});
+		// Message, Name, Identifier.
+		// rcon.send('serverinfo', 'Artful', 10);
+		rcon.send('say Connected to chat', 10);
 
-rcon.on('error', err => {
-	console.error(err);
-});
+	});
 
-rcon.on('disconnect', () => {
-	console.log('Disconnected from RCON websocket');
-});
+	rcon.on('error', err => {
+		console.error(err);
+	});
 
-rcon.on('message', message => {
-	messageHandler(message);
-});
+	rcon.on('disconnect', () => {
+		console.log('Disconnected from RCON websocket');
+    backOffCounter++;
+    setTimeout(
+      connectToServer,
+      defaultDelay * backOffCounter);
+	});
 
+	rcon.on('message', message => {
+		messageHandler(message);
+	});
+}
 
 const messageHandler = (message) => {
 	switch (message.Type) {
 		case 'Chat':
-			chatHandler(message)
+			chatHandler(message);
 	}
 }
 
 const chatHandler = (message) => {
 	const parsedMessage = message.content.Message.match(/^!(?<command>\w+) *(?<rest>.*)/);
-	const command = parsedMessage?.groups.command
-	const rest = parsedMessage?.groups.rest
-	console.log(command, rest)
-	if (!command) return
-	commandHandler(command, rest)
+	const command = parsedMessage?.groups.command;
+	const rest = parsedMessage?.groups.rest;
+	console.log(command, rest);
+	if (!command) return;
+	commandHandler(command, rest);
 }
 
 const commandHandler = (command, params) => {
 	switch (command) {
 		case 'help':
-			printHelp()
+			printHelp();
 			break;
 		case "discord":
-			globalMessage(process.env.DISCORD_URL)
+			globalMessage(process.env.DISCORD_URL);
 			break;
 		default:
-			globalMessage(`Unknown command ${command}\n type !help for a list of commands`)
+			globalMessage(`Unknown command ${command}\n type !help for a list of commands`);
 	}
 }
 
 const globalMessage = (message) => {
-	rcon.send(`say ${message}`)
+	rcon.send(`say ${message}`);
 
 }
 
 const printHelp = () => {
-	globalMessage("Available commands:\nhelp\ndiscord\nmods")
+	globalMessage("Available commands:\nhelp\ndiscord\nmods");
 }
+
+connectToServer();
